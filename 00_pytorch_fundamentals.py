@@ -292,7 +292,71 @@ x_reshaped = x.reshape(1, 9)
 x_reshaped
 torch.squeeze(x_reshaped)
 
+# Unsqueeze - add a dimension at dim
 
+x = torch.arange(1., 10.)
+x_reshaped = x.reshape(3, 3)
+print(x_reshaped.numpy())
+print()
+print(torch.unsqueeze(x_reshaped, dim=0).numpy())
+print()
+print(torch.unsqueeze(x_reshaped, dim=1).numpy())
+print()
+print(torch.unsqueeze(x_reshaped, dim=2).numpy())
+print()
+
+# Permute - a view on the memory
+
+x = torch.rand(size=(224, 448, 3))
+x.shape
+x_permuted = torch.permute(x, dims=(2, 0, 1))
+x_permuted.shape
+
+## notice the shared memory
+
+x[0, 0, 0]
+x_permuted[0, 0, 0]
+x[0, 0, 0] = 123456
+x_permuted[0, 0, 0]
+
+# Indexing with PyTorch
+
+x = torch.arange(1, 10).reshape(1, 3, 3)
+x
+x[0]
+x[0, 0]
+x[0, 1, 2]
+
+x[0, :, 2]
+x[:, :, 2]
+
+x[0, 0:2, 1]
+
+# PyTorch and Numpy
+
+## default numpy dtype is np.float64
+## default torch dtype is torch.float32
+## from_numpy will take the dtype of the numpy array
+n = np.arange(1., 8.)
+x = torch.from_numpy(n)
+x
+## changing the dtype
+x = torch.from_numpy(n).type(torch.float32)
+x
+# or
+n = np.arange(1., 8., dtype=np.float32)
+x = torch.from_numpy(n)
+x
+
+n = np.arange(1., 8.)
+x = torch.from_numpy(n)
+n2 = x.numpy()
+n2.dtype
+x = torch.from_numpy(n).type(torch.float32)
+n3 = x.numpy()
+n3.dtype
+
+# https://youtu.be/Z_ikDlimN6A?t=13305
 
 
 
