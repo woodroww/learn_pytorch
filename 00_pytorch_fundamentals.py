@@ -358,6 +358,64 @@ n3.dtype
 
 # https://youtu.be/Z_ikDlimN6A?t=13305
 
+# Reproducability (take out the random)
+# https://pytorch.org/docs/stable/notes/randomness.html
+
+## seed the random number generator for all device (CPU, and CUDA)
+RANDOM_SEED = 42
+
+torch.manual_seed(RANDOM_SEED)
+random_a = torch.rand(3, 4)
+print(random_a)
+random_b = torch.rand(3, 4)
+print(random_b)
+
+torch.manual_seed(RANDOM_SEED)
+random_1 = torch.rand(3, 4)
+print(random_1)
+print(random_a == random_1)
+random_2 = torch.rand(3, 4)
+print(random_2)
+print(random_a == random_1)
+
+## for custom operators, you might need to set python seed as well
+import random
+random.seed(RANDOM_SEED)
+
+## if you depend on NumPy, seed the global Numpy RNG
+import numpy as np
+np.random.seed(RANDOM_SEED)
+
+## Running on GPU
+# Use Google Colab
+# Use your own GPU, read https://timdettmers.com/2020/09/07/which-gpu-for-deep-learning/
+# use cloud computing - GCP, AWS, Azure
+
+torch.cuda.is_available()
+
+## Device agnostic code
+device = "cuda" if torch.cuda.is_available() else "cpu"
+torch.device(device)
+
+# count number of devices
+torch.cuda.device_count()
+
+# create a tensor (default on the CPU)
+# https://youtu.be/Z_ikDlimN6A?t=14773
+tensor = torch.tensor([1, 2, 3], device="cpu")
+
+# move tensor to gpu (if available)
+tensor_on_gpu = tensor.to(device="cuda")
+
+tensor_on_gpu = tensor.to(device)
+tensor_on_gpu.device
+
+## tensor must be on cpu to transform to numpy
+
+## Practice exercises
+# https://github.com/mrdbourke/pytorch-deep-learning/blob/main/extras/exercises/00_pytorch_fundamentals_exercises.ipynb
+
+
 
 
 
