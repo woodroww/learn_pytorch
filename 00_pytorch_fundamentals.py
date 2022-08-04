@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 
 print(torch.__version__)
 
+## Daniel's Notebook
+# https://github.com/mrdbourke/pytorch-deep-learning/blob/main/00_pytorch_fundamentals.ipynb
+
 ## Introduction to Tensors
 ### Creating tensors
 # PyTorch tensors are created using torch.Tensor()
