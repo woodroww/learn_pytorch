@@ -145,13 +145,8 @@ model_0.state_dict()
 # use inference mode no_grad() also exists but who knows
 with torch.inference_mode():
     y_preds = model_0(X_test)
-
-y_preds
-
-y_preds == maybe_preds
-
-y_preds - y_test
-
+print(y_preds)
+print(y_preds - y_test)
 plot_predictions(predictions=y_preds)
 
 
@@ -161,8 +156,11 @@ plot_predictions(predictions=y_preds)
 # and an optimizer
 # https://pytorch.org/docs/stable/optim.html?highlight=optimizer#torch.optim.Optimizer
 
-loss_fn = nn.L1Loss() # MAE mean avg error
+# MAE_loss = torch.mean(torch.abs(y_pred-y_test))
+# or
+# MAE_loss = torch.nn.L1Loss
 
+loss_fn = nn.L1Loss() # MAE mean avg error
 opt = torch.optim.SGD(model_0.parameters(), lr=0.01)
 
 ## Training loop
@@ -186,8 +184,11 @@ opt = torch.optim.SGD(model_0.parameters(), lr=0.01)
 #       optimizer.step()
 
 def train_model(model, epochs, X_train, y_train):
-    model.train() # sets up the parameters the require gradients
-    for _ in range(epochs):
+    epoch_counts = []
+    train_loss_values = []
+    test_loss_values = []
+    for epoch in range(epochs):
+        model.train() # sets up the parameters the require gradients
         # 1. Forward pass
         y_pred = model(X_train)
         # 2. Loss
@@ -199,24 +200,51 @@ def train_model(model, epochs, X_train, y_train):
         # 5. Gradient descent
         opt.step() # accumulate changes here
         #print(model.state_dict())
-    model.eval() # turns off gradient tracking
+        model.eval() # turns off gradient tracking
+        with torch.inference_mode():
+            # forward pass
+            test_pred = model_0(X_test)
+            # calculate the loss
+            test_loss = loss_fn(test_pred, y_test)
+        if epoch % 10 == 0:
+            epoch_counts.append(epoch)
+            train_loss_values.append(loss)
+            test_loss_values.append(test_loss)
+            print(f"Epoch: {epoch} | Loss: {loss} | Test loss: {test_loss}")
+    return (epoch_counts, train_loss_values, test_loss_values)
 
-# https://youtu.be/Z_ikDlimN6A?t=24487
-train_model(model_0, 50, X_train, y_train)
-
+## Train a model
+torch.manual_seed(42)
+model_0 = LinearRegressionModel()
+with torch.inference_mode():
+    y_preds = model_0(X_test)
+# plot predictions before any training
+plot_predictions(predictions=y_preds)
+# loss and optimizer
+loss_fn = nn.L1Loss() # MAE mean avg error
+opt = torch.optim.SGD(model_0.parameters(), lr=0.01)
+# train loop
+(epochs, train_losses, test_losses) = train_model(model_0, 160, X_train, y_train)
+# make predictions after training
 with torch.inference_mode():
     y_preds_new = model_0(X_test)
-
-plot_predictions(predictions=y_preds)
 plot_predictions(predictions=y_preds_new)
 
 
+## evaluation - turns off dropout and batch norm and who knows what else
+# eval()
+# https://pytorch.org/docs/stable/generated/torch.nn.Module.html?highlight=eval#torch.nn.Module.eval
+# inference_mode()
+# https://pytorch.org/docs/stable/generated/torch.inference_mode.html?highlight=inference_mode#torch.inference_mode
 
+plt.plot(epochs, np.array(torch.tensor(train_losses).numpy()), label="Train Loss")
+plt.plot(epochs, test_losses, label="Test Loss")
+plt.title("Train and test loss curves")
+plt.ylabel("Loss")
+plt.xlabel("Epochs")
+plt.show()
 
-
-
-
-
+# https://youtu.be/Z_ikDlimN6A?t=25874
 
 
 
