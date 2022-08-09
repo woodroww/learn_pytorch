@@ -1,8 +1,3 @@
-import torch
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
 ## Daniel's Notebook
 # https://github.com/mrdbourke/pytorch-deep-learning/blob/main/01_pytorch_workflow.ipynb
 
@@ -139,6 +134,82 @@ model_0.weights
 model_0.bias
 
 model_0.state_dict()
+
+## Making predictions
+# ??? I thought I'd try using just the forward method
+# but maybe this is updating the weights too and this is not what we want
+# when we want to infer
+# maybe_preds = model_0.forward(X_test)
+# y_test
+
+# use inference mode no_grad() also exists but who knows
+with torch.inference_mode():
+    y_preds = model_0(X_test)
+
+y_preds
+
+y_preds == maybe_preds
+
+y_preds - y_test
+
+plot_predictions(predictions=y_preds)
+
+
+## So now we will actually train the model
+# We need a loss function
+# https://pytorch.org/docs/stable/nn.html#loss-functions
+# and an optimizer
+# https://pytorch.org/docs/stable/optim.html?highlight=optimizer#torch.optim.Optimizer
+
+loss_fn = nn.L1Loss() # MAE mean avg error
+
+opt = torch.optim.SGD(model_0.parameters(), lr=0.01)
+
+## Training loop
+# 0. Loop
+# 1. Forward pass
+# 2. Calculate the loss
+# 3. Optimizer zero grad
+# 4. Loss backward - back propagation
+# 5. Gradient descent, Optimizer step - optimizer adjusts the weights (the model's parameters)
+
+# https://pytorch.org/tutorials/beginner/introyt/trainingyt.html
+# idk did Daniel make a mess idk
+# pytorch website
+#       optimizer.zero_grad()
+#       # Make predictions for this batch
+#       outputs = model(inputs)
+#       # Compute the loss and its gradients
+#       loss = loss_fn(outputs, labels)
+#       loss.backward()
+#       # Adjust learning weights
+#       optimizer.step()
+
+def train_model(model, epochs, X_train, y_train):
+    model.train() # sets up the parameters the require gradients
+    for _ in range(epochs):
+        # 1. Forward pass
+        y_pred = model(X_train)
+        # 2. Loss
+        loss = loss_fn(y_pred, y_train)
+        # 3. Optimizer
+        opt.zero_grad() # zero out optimizer changes
+        # 4. Backpropagation
+        loss.backward()
+        # 5. Gradient descent
+        opt.step() # accumulate changes here
+        #print(model.state_dict())
+    model.eval() # turns off gradient tracking
+
+# https://youtu.be/Z_ikDlimN6A?t=24487
+train_model(model_0, 50, X_train, y_train)
+
+with torch.inference_mode():
+    y_preds_new = model_0(X_test)
+
+plot_predictions(predictions=y_preds)
+plot_predictions(predictions=y_preds_new)
+
 
 
 
