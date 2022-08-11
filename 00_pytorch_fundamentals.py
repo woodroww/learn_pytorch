@@ -10,7 +10,9 @@ print(torch.__version__)
 ## Daniel's Notebook
 # https://github.com/mrdbourke/pytorch-deep-learning/blob/main/00_pytorch_fundamentals.ipynb
 
+# ------------------------------------------------------------------------------
 ## Introduction to Tensors
+# ------------------------------------------------------------------------------
 ### Creating tensors
 # PyTorch tensors are created using torch.Tensor()
 # https://pytorch.org/docs/stable/tensors.html
@@ -95,7 +97,9 @@ like_ones.shape
 
 # https://youtu.be/Z_ikDlimN6A?t=6822
 
+# ------------------------------------------------------------------------------
 ### Tensor datatypes
+# ------------------------------------------------------------------------------
 # Datatypes is one of the 3 big errors you'll run into with PyTorch & deep learning
 # 1. Tensors not right datatype
 # 2. Tensors not right shape
@@ -132,7 +136,9 @@ some_tensor.shape
 some_tensor.size()
 some_tensor.device
 
+# ------------------------------------------------------------------------------
 ### Tensor operations
+# ------------------------------------------------------------------------------
 # https://youtu.be/Z_ikDlimN6A?t=8077
 # - Addition
 # - Subtraction
@@ -152,7 +158,9 @@ torch.div(tensor, 10)
 torch.add(tensor, 10)
 torch.sub(tensor, 10)
 
+# ------------------------------------------------------------------------------
 ## Matrix multiplication (dot product)
+# ------------------------------------------------------------------------------
 # http://www.mathsisfun.com/algebra/matrix-multiplying.html
 # http://matrixmultiplication.xyz
 
@@ -200,7 +208,9 @@ tensor_A.T
 torch.matmul(tensor_A, tensor_B.T)
 torch.matmul(tensor_A.T, tensor_B)
 
+# ------------------------------------------------------------------------------
 ## Aggregation
+# ------------------------------------------------------------------------------
 
 tensor_A = torch.tensor(tensor_A, dtype=torch.float32)
 # or
@@ -224,7 +234,9 @@ tensor_A.argmax()
 torch.argmin(tensor_A)
 torch.argmax(tensor_A)
 
+# ------------------------------------------------------------------------------
 ## Reshaping, stacking, squeezing and unsqueezing
+# ------------------------------------------------------------------------------
 # https://youtu.be/Z_ikDlimN6A?t=10766
 # - Reshape - reshape an input tensor
 # - View - Return a view of an input tensor of certain shape but shares the same
@@ -335,7 +347,9 @@ x[:, :, 2]
 
 x[0, 0:2, 1]
 
+# ------------------------------------------------------------------------------
 # PyTorch and Numpy
+# ------------------------------------------------------------------------------
 
 ## default numpy dtype is np.float64
 ## default torch dtype is torch.float32
@@ -361,7 +375,9 @@ n3.dtype
 
 # https://youtu.be/Z_ikDlimN6A?t=13305
 
+# ------------------------------------------------------------------------------
 # Reproducability (take out the random)
+# ------------------------------------------------------------------------------
 # https://pytorch.org/docs/stable/notes/randomness.html
 
 ## seed the random number generator for all device (CPU, and CUDA)

@@ -1,7 +1,9 @@
 ## Daniel's Notebook
 # https://github.com/mrdbourke/pytorch-deep-learning/blob/main/01_pytorch_workflow.ipynb
 
+# ------------------------------------------------------------------------------
 # PyTorch Workflow
+# ------------------------------------------------------------------------------
 # 1. Get data ready (data cleaning and transformation, turn into tensors)
 # 2. Build or pick a model
 #   2.1 Pick a loss function and optimizer
@@ -48,7 +50,9 @@ X_test, y_test = X[train_split:], y[train_split:]
 
 len(X_train), len(y_train), len(X_test), len(y_test)
 
+# ------------------------------------------------------------------------------
 # Visualize, Visualize, Visualize
+# ------------------------------------------------------------------------------
 
 
 def plot_predictions(
@@ -80,7 +84,9 @@ plot_predictions(
 )
 
 
+# ------------------------------------------------------------------------------
 # Build a model
+# ------------------------------------------------------------------------------
 # Linear regression
 # Y = a + bX
 # In PyTorch we create a python subclass
@@ -88,8 +94,7 @@ plot_predictions(
 # backpropagation
 # https://youtu.be/IHZwWFHWa-w
 
-import torch.nn as nn
-
+from torch import nn
 
 class LinearRegressionModel(nn.Module):
     def __init__(self):
@@ -106,7 +111,9 @@ class LinearRegressionModel(nn.Module):
 
 
 
+# ------------------------------------------------------------------------------
 # PyTorch model building essentails
+# ------------------------------------------------------------------------------
 # torch.nn
 # Contains all the building blocks for computational graphs
 # torch.nn.Module
@@ -135,7 +142,9 @@ model_0.bias
 
 model_0.state_dict()
 
+# ------------------------------------------------------------------------------
 ## Making predictions
+# ------------------------------------------------------------------------------
 # ??? I thought I'd try using just the forward method
 # but maybe this is updating the weights too and this is not what we want
 # when we want to infer
@@ -163,7 +172,9 @@ plot_predictions(predictions=y_preds)
 loss_fn = nn.L1Loss() # MAE mean avg error
 opt = torch.optim.SGD(model_0.parameters(), lr=0.01)
 
+# ------------------------------------------------------------------------------
 ## Training loop
+# ------------------------------------------------------------------------------
 # 0. Loop
 # 1. Forward pass
 # 2. Calculate the loss
@@ -203,7 +214,7 @@ def train_model(model, epochs, X_train, y_train):
         model.eval() # turns off gradient tracking
         with torch.inference_mode():
             # forward pass
-            test_pred = model_0(X_test)
+            test_pred = model(X_test)
             # calculate the loss
             test_loss = loss_fn(test_pred, y_test)
         if epoch % 10 == 0:
@@ -213,7 +224,9 @@ def train_model(model, epochs, X_train, y_train):
             print(f"Epoch: {epoch} | Loss: {loss} | Test loss: {test_loss}")
     return (epoch_counts, train_loss_values, test_loss_values)
 
+# ------------------------------------------------------------------------------
 ## Train a model
+# ------------------------------------------------------------------------------
 torch.manual_seed(42)
 model_0 = LinearRegressionModel()
 with torch.inference_mode():
@@ -231,7 +244,9 @@ with torch.inference_mode():
 plot_predictions(predictions=y_preds_new)
 
 
+# ------------------------------------------------------------------------------
 ## evaluation - turns off dropout and batch norm and who knows what else
+# ------------------------------------------------------------------------------
 # eval()
 # https://pytorch.org/docs/stable/generated/torch.nn.Module.html?highlight=eval#torch.nn.Module.eval
 # inference_mode()
@@ -244,10 +259,140 @@ plt.ylabel("Loss")
 plt.xlabel("Epochs")
 plt.show()
 
-# https://youtu.be/Z_ikDlimN6A?t=25874
+# https://youtu.be/Z_ikDlimN6A?t=26130
+
+# ------------------------------------------------------------------------------
+# Saving a model
+# ------------------------------------------------------------------------------
+# https://pytorch.org/tutorials/beginner/basics/saveloadrun_tutorial.html
+
+# 1. torch.save() - python pickle
+# 2. torch.load() - load
+# 3. torch.nn.load_state_dict() - load model's saved state dictionary
+
+model_0.state_dict()
+
+from pathlib import Path
+
+model_dir = "/Users/matt/prog/torch_daniel/models"
+model_path = Path(model_dir)
+
+model_name = "01_pytorch_workflow_model_0.pth"
+model_save_path = model_path / model_name
+
+# save the state dict
+torch.save(model_0.state_dict(), model_save_path)
+print(f"Saved model to: {model_save_path}")
+
+# ------------------------------------------------------------------------------
+# Load a model
+# ------------------------------------------------------------------------------
+# We only saved the state dict so we must:
+# - create a new model
+# - load the state dict
+
+loaded_model_0 = LinearRegressionModel()
+loaded_model_0.load_state_dict(torch.load(model_save_path))
+
+# try some predictions
+loaded_model_0.eval()
+with torch.inference_mode():
+    y_preds = model_0(X_test)
+    load_preds = loaded_model_0(X_test)
+
+y_preds == load_preds
 
 
+# ------------------------------------------------------------------------------
+# Putting it together
+# ------------------------------------------------------------------------------
+# https://youtu.be/Z_ikDlimN6A?t=27481
+
+import torch
+from torch import nn
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+# go for device independent code
+device = "cuda" if torch.cuda.is_available() else "cpu"
+torch.device(device)
+
+# make linear regression input data (features)
+# Y = a + bX
+weight = 0.7
+bias = 0.1
+start = 0
+end = 1
+step = 0.02
+X = torch.arange(start, end, step).unsqueeze(dim=1)
+y = weight * X + bias
+
+# split the data
+X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.33, shuffle=True)
+
+# maybe one day we will have a gpu
+X_train = X_train.to(device)
+X_test = X_test.to(device)
+y_train = y_train.to(device)
+y_test = y_test.to(device)
+
+# visualize
+plot_predictions(X_train, y_train, X_test, y_test)
+
+# create model
+class LinearRegressionV2(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # this time use torch linear layer
+        # 1, 1 are the shapes of the features and labels
+        # nn.Linear will do the weights and bias initialization we did before
+        # and use the linear regression formula
+        self.linear_layer = nn.Linear(in_features=1, out_features=1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.linear_layer(x)
+
+# reproducability
+torch.manual_seed(42)
+model_1 = LinearRegressionV2()
+model_1.state_dict()
+
+# check and see if untrained model has reasonable output
+model_1.eval()
+with torch.inference_mode():
+    y_preds = model_1(X_test)
+plot_predictions(X_train, y_train, X_test, y_test, y_preds)
+
+# setup loss function and optimizer
+# could these be in the LinearRegressionV2 model ???
+loss_fn = nn.L1Loss() # MAE mean avg error
+opt = torch.optim.SGD(model_1.parameters(), lr=0.01)
+
+# train using the training loop
+(epochs, train_losses, test_losses) = train_model(model_1, 100, X_train, y_train)
+
+# evaluate performance
+model_1.eval()
+with torch.inference_mode():
+    y_preds = model_1(X_test)
+plot_predictions(X_train, y_train, X_test, y_test, y_preds)
+
+# Y = a + bX
+# weight = 0.7
+# bias = 0.1
+model_1.state_dict()
+
+# plot loss curves
+fig = plt.figure()
+plt.plot(epochs, np.array(torch.tensor(train_losses).numpy()), label="Train Loss")
+plt.plot(epochs, test_losses, label="Test Loss")
+plt.title("Train and test loss curves")
+plt.ylabel("Loss")
+plt.xlabel("Epochs")
+plt.show()
 
 
-
+# https://youtu.be/Z_ikDlimN6A?t=29584
 
