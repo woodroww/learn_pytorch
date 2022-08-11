@@ -24,6 +24,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from pathlib import Path
+MODEL_DIR = "/Users/matt/prog/torch_daniel/models"
+
 # known parameters
 weight = 0.7
 bias = 0.3
@@ -56,10 +59,10 @@ len(X_train), len(y_train), len(X_test), len(y_test)
 
 
 def plot_predictions(
-    train_data=X_train,
-    train_labels=y_train,
-    test_data=X_test,
-    test_labels=y_test,
+    train_data,
+    train_labels,
+    test_data,
+    test_labels,
     predictions=None,
 ):
     """
@@ -156,8 +159,12 @@ with torch.inference_mode():
     y_preds = model_0(X_test)
 print(y_preds)
 print(y_preds - y_test)
-plot_predictions(predictions=y_preds)
-
+plot_predictions(
+    train_data=X_train,
+    train_labels=y_train,
+    test_data=X_test,
+    test_labels=y_test,
+    predictions=y_preds)
 
 ## So now we will actually train the model
 # We need a loss function
@@ -194,7 +201,7 @@ opt = torch.optim.SGD(model_0.parameters(), lr=0.01)
 #       # Adjust learning weights
 #       optimizer.step()
 
-def train_model(model, epochs, X_train, y_train):
+def train_model(model, epochs, X_train, y_train, loss_fn, opt):
     epoch_counts = []
     train_loss_values = []
     test_loss_values = []
@@ -232,16 +239,26 @@ model_0 = LinearRegressionModel()
 with torch.inference_mode():
     y_preds = model_0(X_test)
 # plot predictions before any training
-plot_predictions(predictions=y_preds)
+plot_predictions(
+    train_data=X_train,
+    train_labels=y_train,
+    test_data=X_test,
+    test_labels=y_test,
+    predictions=y_preds)
 # loss and optimizer
 loss_fn = nn.L1Loss() # MAE mean avg error
 opt = torch.optim.SGD(model_0.parameters(), lr=0.01)
 # train loop
-(epochs, train_losses, test_losses) = train_model(model_0, 160, X_train, y_train)
+(epochs, train_losses, test_losses) = train_model(model_0, 160, X_train, y_train, loss_fn, opt)
 # make predictions after training
 with torch.inference_mode():
     y_preds_new = model_0(X_test)
-plot_predictions(predictions=y_preds_new)
+plot_predictions(
+    train_data=X_train,
+    train_labels=y_train,
+    test_data=X_test,
+    test_labels=y_test,
+    predictions=y_preds)
 
 
 # ------------------------------------------------------------------------------
@@ -272,10 +289,7 @@ plt.show()
 
 model_0.state_dict()
 
-from pathlib import Path
-
-model_dir = "/Users/matt/prog/torch_daniel/models"
-model_path = Path(model_dir)
+model_path = Path(MODEL_DIR)
 
 model_name = "01_pytorch_workflow_model_0.pth"
 model_save_path = model_path / model_name
@@ -314,7 +328,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import numpy as np
 
-# go for device independent code
+# for device agnostic code
 device = "cuda" if torch.cuda.is_available() else "cpu"
 torch.device(device)
 
@@ -359,6 +373,9 @@ torch.manual_seed(42)
 model_1 = LinearRegressionV2()
 model_1.state_dict()
 
+# for device agnostic code
+model_1.to(device)
+
 # check and see if untrained model has reasonable output
 model_1.eval()
 with torch.inference_mode():
@@ -371,7 +388,7 @@ loss_fn = nn.L1Loss() # MAE mean avg error
 opt = torch.optim.SGD(model_1.parameters(), lr=0.01)
 
 # train using the training loop
-(epochs, train_losses, test_losses) = train_model(model_1, 100, X_train, y_train)
+(epochs, train_losses, test_losses) = train_model(model_1, 100, X_train, y_train, loss_fn, opt)
 
 # evaluate performance
 model_1.eval()
@@ -393,6 +410,32 @@ plt.ylabel("Loss")
 plt.xlabel("Epochs")
 plt.show()
 
-
 # https://youtu.be/Z_ikDlimN6A?t=29584
+
+# save the model
+model_name = "01_pytorch_workflow_model_1.pth"
+model_save_path = Path(MODEL_DIR) / model_name
+torch.save(model_1.state_dict(), model_save_path)
+print(f"Saved model to: {model_save_path}")
+
+# load the model
+loaded_model_1 = LinearRegressionV2()
+loaded_model_1.load_state_dict(torch.load(model_save_path))
+
+# agnostic device
+loaded_model_1.to(device)
+
+# try some predictions
+loaded_model_1.eval()
+with torch.inference_mode():
+    load_preds = loaded_model_1(X_test)
+
+# see if we have the same predictions
+y_preds == load_preds
+
+# https://youtu.be/Z_ikDlimN6A?t=30487
+# Extra curriculum
+# https://github.com/mrdbourke/pytorch-deep-learning/blob/main/01_pytorch_workflow.ipynb
+
+
 
