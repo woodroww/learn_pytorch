@@ -65,17 +65,68 @@ model_0 = CircleModelV0().to(device)
 model_0
 model_0.state_dict()
 
-    
+model_0.eval()
+with torch.inference_mode():
+    y_preds = model_0(X_test)
+
+torch.round(y_preds)
+
+
+def train_model(model, epochs, X_train, y_train, loss_fn, opt):
+    epoch_counts = []
+    train_loss_values = []
+    test_loss_values = []
+    for epoch in range(epochs):
+        model.train() # sets up the parameters the require gradients
+        # 1. Forward pass
+        y_pred = model(X_train)
+        # 2. Loss
+        # print(torch.squeeze(y_pred).shape)
+        # print(y_train.shape)
+        loss = loss_fn(y_pred, y_train)
+        # 3. Optimizer
+        opt.zero_grad() # zero out optimizer changes
+        # 4. Backpropagation
+        loss.backward()
+        # 5. Gradient descent
+        opt.step() # accumulate changes here
+        #print(model.state_dict())
+        model.eval() # turns off gradient tracking
+        with torch.inference_mode():
+            # forward pass
+            test_pred = model(X_test)
+            # calculate the loss
+            test_loss = loss_fn(test_pred, y_test)
+        if epoch % 10 == 0:
+            epoch_counts.append(epoch)
+            train_loss_values.append(loss)
+            test_loss_values.append(test_loss)
+            print(f"Epoch: {epoch} | Loss: {loss} | Test loss: {test_loss}")
+    return (epoch_counts, train_loss_values, test_loss_values)
 
 
 
+#loss_fn = nn.L1Loss() # MAE mean avg error
+loss_fn = nn.BCEWithLogitsLoss()
+opt = torch.optim.SGD(model_0.parameters(), lr=0.01)
+
+with torch.inference_mode():
+    y_logits = model_0(X_test.to(device))[:5]
+y_logits
+
+# so I thought he said something about the sigmoid being included but I guess not
+torch.round(torch.sigmoid(y_logits))
+
+# https://youtu.be/Z_ikDlimN6A?t=37338
+
+(epochs, train_losses, test_losses) = train_model(model_0, 100, X_train, y_train, loss_fn, opt)
 
 
 
-
-
-
-
+def accuracy_fn(y_true, y_pred):
+    correct = torch.eq(y_true, y_pred).sum().item()
+    acc = (correct / len(y_pred)) * 100
+    return acc
 
 
 
