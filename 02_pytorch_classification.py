@@ -2,6 +2,7 @@
 # https://github.com/mrdbourke/pytorch-deep-learning/blob/main/02_pytorch_classification.ipynb
 # https://youtu.be/Z_ikDlimN6A?t=30690
 
+from numpy.core.fromnumeric import squeeze
 import torch
 from torch import nn
 import pandas as pd
@@ -68,43 +69,9 @@ model_0.state_dict()
 model_0.eval()
 with torch.inference_mode():
     y_preds = model_0(X_test)
-
 torch.round(y_preds)
 
-
-def train_model(model, epochs, X_train, y_train, loss_fn, opt):
-    epoch_counts = []
-    train_loss_values = []
-    test_loss_values = []
-    for epoch in range(epochs):
-        model.train() # sets up the parameters the require gradients
-        # 1. Forward pass
-        y_pred = model(X_train)
-        # 2. Loss
-        # print(torch.squeeze(y_pred).shape)
-        # print(y_train.shape)
-        loss = loss_fn(y_pred, y_train)
-        # 3. Optimizer
-        opt.zero_grad() # zero out optimizer changes
-        # 4. Backpropagation
-        loss.backward()
-        # 5. Gradient descent
-        opt.step() # accumulate changes here
-        #print(model.state_dict())
-        model.eval() # turns off gradient tracking
-        with torch.inference_mode():
-            # forward pass
-            test_pred = model(X_test)
-            # calculate the loss
-            test_loss = loss_fn(test_pred, y_test)
-        if epoch % 10 == 0:
-            epoch_counts.append(epoch)
-            train_loss_values.append(loss)
-            test_loss_values.append(test_loss)
-            print(f"Epoch: {epoch} | Loss: {loss} | Test loss: {test_loss}")
-    return (epoch_counts, train_loss_values, test_loss_values)
-
-
+## yikes
 
 #loss_fn = nn.L1Loss() # MAE mean avg error
 loss_fn = nn.BCEWithLogitsLoss()
@@ -115,64 +82,149 @@ with torch.inference_mode():
 y_logits
 
 # so I thought he said something about the sigmoid being included but I guess not
-torch.round(torch.sigmoid(y_logits))
+y_pred_probs = torch.sigmoid(y_logits)
+
+y_preds = torch.round(y_pred_probs)
 
 # https://youtu.be/Z_ikDlimN6A?t=37338
 
-(epochs, train_losses, test_losses) = train_model(model_0, 100, X_train, y_train, loss_fn, opt)
+y_preds[:5]
 
+torch.manual_seed(42)
+torch.cuda.manual_seed(42)
 
+X_train, y_train = X_train.to(device), y_train.to(device)
+X_test, y_test = X_test.to(device), y_test.to(device)
 
+# argument order based off how sci kit does it
+# pytorch is reversed
 def accuracy_fn(y_true, y_pred):
     correct = torch.eq(y_true, y_pred).sum().item()
     acc = (correct / len(y_pred)) * 100
     return acc
 
+def train_model(model, epochs, X_train, y_train, loss_fn, opt):
+    epoch_counts = []
+    train_loss_values = []
+    test_loss_values = []
+    for epoch in range(epochs):
+        model.train() # sets up the parameters the require gradients
+        # 1. Forward pass
+        y_logits = model(X_train).squeeze()
+        y_preds = torch.round(torch.sigmoid(y_logits))
+        # 2. Loss
+        # from docs BCEWithLogitsLoss combines a sigmoid layer and BCELoss in a single class
+        # expects raw logits
+        loss = loss_fn(y_logits, y_train)
+        # BCELoss would be
+        # loss = loss_fn(y_preds, y_train)
+        acc = accuracy_fn(y_true=y_train, y_pred=y_preds)
+        # 3. Optimizer
+        opt.zero_grad() # zero out optimizer changes
+        # 4. Backpropagation
+        loss.backward()
+        # 5. Gradient descent
+        opt.step() # accumulate changes here
+        # Testing
+        model.eval() # turns off gradient tracking
+        with torch.inference_mode():
+            # forward pass
+            test_logits = model(X_test).squeeze()
+            test_pred = torch.round(torch.sigmoid(test_logits))
+            # calculate the loss
+            test_loss = loss_fn(test_logits, y_test)
+            test_accuracy = accuracy_fn(y_true=y_test, y_pred=test_pred)
+        if epoch % 10 == 0:
+            epoch_counts.append(epoch)
+            train_loss_values.append(loss)
+            test_loss_values.append(test_loss)
+            print(f"Epoch: {epoch} | Loss: {loss:.5f} | Acc: {acc:.5f} | Test loss: {test_loss:.5f} | Test acc: {test_accuracy:.5f}")
+    return (epoch_counts, train_loss_values, test_loss_values)
+
+(epochs, train_losses, test_losses) = train_model(model_0, 100, X_train, y_train, loss_fn, opt)
+
+# So not really good
+
+from helper_functions import plot_decision_boundary
+
+def decision_plots(model, X_train, y_train, X_test, y_test):
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.title("Train")
+    plot_decision_boundary(model, X_train, y_train)
+    plt.subplot(1, 2, 2)
+    plt.title("Test")
+    plot_decision_boundary(model, X_test, y_test)
+
+decision_plots(model_0, X_train, y_train, X_test, y_test)
+
+# https://youtu.be/Z_ikDlimN6A?t=40301
+
+# Here we shall change one variable here to improve our model
+# Why Daniel talk about this then he changes two things
+# I think I only increase the features here
+class CircleModelV1(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layer_1 = nn.Linear(in_features=2, out_features=20)
+        self.layer_2 = nn.Linear(in_features=20, out_features=1)
+    def forward(self, x):
+        z = self.layer_1(x)
+        z = self.layer_2(z)
+        return z
+        
+model_1 = CircleModelV1().to(device)
+loss_fn = nn.BCEWithLogitsLoss()
+opt = torch.optim.SGD(model_1.parameters(), lr=0.01) 
+(epochs, train_losses, test_losses) = train_model(model_1, 100, X_train, y_train, loss_fn, opt)
+decision_plots(model_1, X_train, y_train, X_test, y_test)
+
+# https://youtu.be/Z_ikDlimN6A?t=40979
+
+## add a relu layer
+class CircleModelV2(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layer_1 = nn.Linear(in_features=2, out_features=20)
+        self.layer_2 = nn.ReLU()
+        self.layer_3 = nn.Linear(in_features=20, out_features=1)
+    def forward(self, x):
+        z = self.layer_1(x)
+        z = self.layer_2(z)
+        z = self.layer_3(z)
+        return z
+        
+model_2 = CircleModelV2().to(device)
+loss_fn = nn.BCEWithLogitsLoss()
+opt = torch.optim.SGD(model_2.parameters(), lr=0.01) 
+(epochs, train_losses, test_losses) = train_model(model_2, 100, X_train, y_train, loss_fn, opt)
+decision_plots(model_2, X_train, y_train, X_test, y_test)
+
+# create a class to hold the results from train model like tensorflow history
+# create a function for the above where we create the loss fn and the optimizer
+
+class CircleModelV3(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layer_1 = nn.Linear(in_features=2, out_features=20)
+        self.layer_2 = nn.ReLU()
+        self.layer_3 = nn.Linear(in_features=20, out_features=40)
+        self.layer_4 = nn.ReLU()
+    def forward(self, x):
+        z = self.layer_1(x)
+        z = self.layer_2(z)
+        z = self.layer_3(z)
+        z = self.layer_4(z)
+        z = self.layer_5(z)
+        z = self.layer_6(z)
+        return z
+        
+model_3 = CircleModelV3().to(device)
+loss_fn = nn.BCEWithLogitsLoss()
+opt = torch.optim.SGD(model_3.parameters(), lr=0.01) 
+(epochs, train_losses, test_losses) = train_model(model_3, 100, X_train, y_train, loss_fn, opt)
+decision_plots(model_3, X_train, y_train, X_test, y_test)
 
 
 
-
-
-
-
-
-
-
-
-
-# Function inspired from Convolutional Neural Networks for Visual Recognition
-# [cs231n](http://cs231n.stanford.edu/) 
-# And
-# https://github.com/GokuMohandas/MadeWithML/blob/main/notebooks/08_Neural_Networks.ipynb
-
-def plot_decision_boundary(model, X, y):
-    """
-    Plots the decision boundary created by a model predicting on X.
-    """
-    # Define the axis boundaries of the plot and create a meshgrid
-    x_min, x_max = X[:,0].min() - 0.1, X[:,0].max() + 0.1
-    y_min, y_max = X[:,0].min() - 0.1, X[:,0].max() + 0.1
-    
-    xx, yy = np.meshgrid(np.linspace(x_min, x_max),
-                         np.linspace(y_min, y_max))
-    
-    # Create X values (we're going to make predictions on these)
-    x_in = np.c_[xx.ravel(), yy.ravel()] # stack 2D arrays together
-
-    # Make predictions
-    y_pred = model.predict(x_in)
-
-    # Check for multi-class
-    if len(y_pred[0]) > 1:
-        print("Doing multiclass classification")
-        y_pred = np.argmax(y_pred, axis=1).reshape(xx.shape)
-    else:
-        print("Doing binary classification")
-        y_pred = np.round(y_pred).reshape(xx.shape)
-    
-    # plot the decision boundary
-    plt.contourf(xx, yy, y_pred, cmap=plt.cm.RdYlBu, alpha=0.7)
-    plt.scatter(X[:,0], X[:,1], c=y, s=40, cmap=plt.cm.RdYlBu)
-    plt.xlim(xx.min(), xx.max())
-    plt.ylim(yy.min(), yy.max())
 

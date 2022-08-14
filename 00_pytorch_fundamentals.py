@@ -1,5 +1,3 @@
-print("hello, super excited to be learning with Daniel again")
-
 import torch
 import pandas as pd
 import numpy as np
