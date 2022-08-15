@@ -12,6 +12,30 @@ import matplotlib.pyplot as plt
 import numpy as np
 # from torch import nn
 
+# plot_predictions(train_data=X_train, train_labels=y_train, test_data=X_test, test_labels=y_test)
+
+def plot_predictions(
+    train_data,
+    train_labels,
+    test_data,
+    test_labels,
+    predictions=None):
+    """
+    Plots training data, test data and compares predictions
+    """
+    plt.figure(figsize=(10, 7))
+
+    plt.scatter(train_data, train_labels, c="b", s=4, label="Training Data")
+
+    plt.scatter(test_data, test_labels, c="g", s=4, label="Testing Data")
+
+    if predictions is not None:
+        plt.scatter(test_data, predictions, c="r", s=4, label="Predictions")
+
+    plt.legend(prop={"size": 14})
+    plt.show()
+
+
 def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor):
     """
     Plots the decision boundary created by a model predicting on X.

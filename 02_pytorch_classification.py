@@ -46,7 +46,8 @@ y = torch.from_numpy(y).type(torch.float32)
 
 # split the data
 X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.20, shuffle=True, random_state=42)
+    X, y, test_size=0.20, shuffle=True, random_state=42
+)
 
 X_train.shape, X_test.shape, y_train.shape, y_test.shape
 
@@ -54,14 +55,17 @@ torch.manual_seed(42)
 
 # So we want to classify the blue dots as blue and the red dots as red
 
+
 class CircleModelV0(nn.Module):
     def __init__(self):
         super().__init__()
         self.layer_1 = nn.Linear(in_features=2, out_features=5)
         self.layer_2 = nn.Linear(in_features=5, out_features=1)
+
     def forward(self, x):
         return self.layer_2(self.layer_1(x))
-        
+
+
 model_0 = CircleModelV0().to(device)
 model_0
 model_0.state_dict()
@@ -73,7 +77,7 @@ torch.round(y_preds)
 
 ## yikes
 
-#loss_fn = nn.L1Loss() # MAE mean avg error
+# loss_fn = nn.L1Loss() # MAE mean avg error
 loss_fn = nn.BCEWithLogitsLoss()
 opt = torch.optim.SGD(model_0.parameters(), lr=0.01)
 
@@ -103,12 +107,13 @@ def accuracy_fn(y_true, y_pred):
     acc = (correct / len(y_pred)) * 100
     return acc
 
+
 def train_model(model, epochs, X_train, y_train, loss_fn, opt):
     epoch_counts = []
     train_loss_values = []
     test_loss_values = []
     for epoch in range(epochs):
-        model.train() # sets up the parameters the require gradients
+        model.train()  # sets up the parameters the require gradients
         # 1. Forward pass
         y_logits = model(X_train).squeeze()
         y_preds = torch.round(torch.sigmoid(y_logits))
@@ -120,13 +125,13 @@ def train_model(model, epochs, X_train, y_train, loss_fn, opt):
         # loss = loss_fn(y_preds, y_train)
         acc = accuracy_fn(y_true=y_train, y_pred=y_preds)
         # 3. Optimizer
-        opt.zero_grad() # zero out optimizer changes
+        opt.zero_grad()  # zero out optimizer changes
         # 4. Backpropagation
         loss.backward()
         # 5. Gradient descent
-        opt.step() # accumulate changes here
+        opt.step()  # accumulate changes here
         # Testing
-        model.eval() # turns off gradient tracking
+        model.eval()  # turns off gradient tracking
         with torch.inference_mode():
             # forward pass
             test_logits = model(X_test).squeeze()
@@ -138,14 +143,20 @@ def train_model(model, epochs, X_train, y_train, loss_fn, opt):
             epoch_counts.append(epoch)
             train_loss_values.append(loss)
             test_loss_values.append(test_loss)
-            print(f"Epoch: {epoch} | Loss: {loss:.5f} | Acc: {acc:.5f} | Test loss: {test_loss:.5f} | Test acc: {test_accuracy:.5f}")
+            print(
+                f"Epoch: {epoch} | Loss: {loss:.5f} | Acc: {acc:.5f} | Test loss: {test_loss:.5f} | Test acc: {test_accuracy:.5f}"
+            )
     return (epoch_counts, train_loss_values, test_loss_values)
 
-(epochs, train_losses, test_losses) = train_model(model_0, 100, X_train, y_train, loss_fn, opt)
+
+(epochs, train_losses, test_losses) = train_model(
+    model_0, 100, X_train, y_train, loss_fn, opt
+)
 
 # So not really good
 
 from helper_functions import plot_decision_boundary
+
 
 def decision_plots(model, X_train, y_train, X_test, y_test):
     plt.figure(figsize=(12, 6))
@@ -155,6 +166,7 @@ def decision_plots(model, X_train, y_train, X_test, y_test):
     plt.subplot(1, 2, 2)
     plt.title("Test")
     plot_decision_boundary(model, X_test, y_test)
+
 
 decision_plots(model_0, X_train, y_train, X_test, y_test)
 
@@ -168,19 +180,95 @@ class CircleModelV1(nn.Module):
         super().__init__()
         self.layer_1 = nn.Linear(in_features=2, out_features=20)
         self.layer_2 = nn.Linear(in_features=20, out_features=1)
+
     def forward(self, x):
         z = self.layer_1(x)
         z = self.layer_2(z)
         return z
-        
+
+
 model_1 = CircleModelV1().to(device)
 loss_fn = nn.BCEWithLogitsLoss()
-opt = torch.optim.SGD(model_1.parameters(), lr=0.01) 
-(epochs, train_losses, test_losses) = train_model(model_1, 100, X_train, y_train, loss_fn, opt)
+opt = torch.optim.SGD(model_1.parameters(), lr=0.01)
+(epochs, train_losses, test_losses) = train_model(
+    model_1, 100, X_train, y_train, loss_fn, opt
+)
 decision_plots(model_1, X_train, y_train, X_test, y_test)
 
 # https://youtu.be/Z_ikDlimN6A?t=40979
 
+# ------------------------------------------------------------------------------
+# So we know the problem is we don't have any non-linearity
+# Daniel wants to trouble shoot this problem step by step
+# One way to troubleshoot a larger problem is to test out a smaller problem
+# Can this model fit a linear regression? Let's find out.
+
+weight = 0.7
+bias = 0.3
+start = 0
+end = 1
+step = 0.01
+X_regression = torch.arange(start, end, step).unsqueeze(dim=1)
+y_regression = bias + weight * X_regression
+
+(
+    X_regression_train,
+    X_regression_test,
+    y_regression_train,
+    y_regression_test,
+) = train_test_split(
+    X_regression, y_regression, test_size=0.20, shuffle=True, random_state=42
+)
+
+X_regression_train = X_regression_train.to(device)
+y_regression_train = y_regression_train.to(device)
+X_regression_test,  = X_regression_test.to(device)
+y_regression_test = y_regression_test.to(device)
+len(X_regression_train)
+len(y_regression_train)
+len(X_regression_test)
+len( y_regression_test)
+
+from helper_functions import plot_predictions
+
+plot_predictions(
+    train_data=X_regression_train,
+    train_labels=y_regression_train,
+    test_data=X_regression_test,
+    test_labels=y_regression_test,
+)
+
+
+class RegressionModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layer_1 = nn.Linear(in_features=1, out_features=20)
+        self.layer_2 = nn.Linear(in_features=20, out_features=1)
+
+    def forward(self, x):
+        z = self.layer_1(x)
+        z = self.layer_2(z)
+        return z
+
+
+regression_model = RegressionModel().to(device)
+loss_fn = nn.L1Loss()
+opt = torch.optim.SGD(regression_model.parameters(), lr=0.01)
+(epochs, train_losses, test_losses) = train_model(
+    regression_model, 100, X_regression_train, y_regression_train, loss_fn, opt
+)
+decision_plots(
+    regression_model,
+    X_regression_train,
+    y_regression_train,
+    X_regression_test,
+    y_regression_test,
+)
+# https://youtu.be/Z_ikDlimN6A?t=42096
+# end diversion
+# ------------------------------------------------------------------------------
+
+# So we know the problem is we don't have any non-linearity
 ## add a relu layer
 class CircleModelV2(nn.Module):
     def __init__(self):
@@ -188,43 +276,48 @@ class CircleModelV2(nn.Module):
         self.layer_1 = nn.Linear(in_features=2, out_features=20)
         self.layer_2 = nn.ReLU()
         self.layer_3 = nn.Linear(in_features=20, out_features=1)
-    def forward(self, x):
-        z = self.layer_1(x)
-        z = self.layer_2(z)
-        z = self.layer_3(z)
-        return z
-        
-model_2 = CircleModelV2().to(device)
-loss_fn = nn.BCEWithLogitsLoss()
-opt = torch.optim.SGD(model_2.parameters(), lr=0.01) 
-(epochs, train_losses, test_losses) = train_model(model_2, 100, X_train, y_train, loss_fn, opt)
-decision_plots(model_2, X_train, y_train, X_test, y_test)
-
-# create a class to hold the results from train model like tensorflow history
-# create a function for the above where we create the loss fn and the optimizer
-
-class CircleModelV3(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.layer_1 = nn.Linear(in_features=2, out_features=20)
-        self.layer_2 = nn.ReLU()
-        self.layer_3 = nn.Linear(in_features=20, out_features=40)
         self.layer_4 = nn.ReLU()
+
     def forward(self, x):
         z = self.layer_1(x)
         z = self.layer_2(z)
         z = self.layer_3(z)
         z = self.layer_4(z)
-        z = self.layer_5(z)
-        z = self.layer_6(z)
         return z
-        
+
+
+model_2 = CircleModelV2().to(device)
+loss_fn = nn.BCEWithLogitsLoss()
+opt = torch.optim.SGD(model_2.parameters(), lr=0.01)
+(epochs, train_losses, test_losses) = train_model(
+    model_2, 500, X_train, y_train, loss_fn, opt
+)
+decision_plots(model_2, X_train, y_train, X_test, y_test)
+
+# create a class to hold the results from train model like tensorflow history
+# create a function for the above where we create the loss fn and the optimizer
+
+
+class CircleModelV3(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layer_1 = nn.Linear(in_features=2, out_features=100)
+        self.layer_2 = nn.ReLU()
+        self.layer_3 = nn.Linear(in_features=100, out_features=1)
+        self.layer_4 = nn.ReLU()
+
+    def forward(self, x):
+        z = self.layer_1(x)
+        z = self.layer_2(z)
+        z = self.layer_3(z)
+        z = self.layer_4(z)
+        return z
+
+
 model_3 = CircleModelV3().to(device)
 loss_fn = nn.BCEWithLogitsLoss()
-opt = torch.optim.SGD(model_3.parameters(), lr=0.01) 
-(epochs, train_losses, test_losses) = train_model(model_3, 100, X_train, y_train, loss_fn, opt)
+opt = torch.optim.SGD(model_3.parameters(), lr=0.01)
+(epochs, train_losses, test_losses) = train_model(
+    model_3, 100, X_train, y_train, loss_fn, opt
+)
 decision_plots(model_3, X_train, y_train, X_test, y_test)
-
-
-
-
