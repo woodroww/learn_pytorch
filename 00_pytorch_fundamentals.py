@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 print(torch.__version__)
+device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+print(f"Using {device} device")
 
 ## Daniel's Notebook
 # https://github.com/mrdbourke/pytorch-deep-learning/blob/main/00_pytorch_fundamentals.ipynb
@@ -11,6 +13,8 @@ print(torch.__version__)
 # ------------------------------------------------------------------------------
 ## Introduction to Tensors
 # ------------------------------------------------------------------------------
+# https://youtu.be/Z_ikDlimN6A?t=4902
+
 ### Creating tensors
 # PyTorch tensors are created using torch.Tensor()
 # https://pytorch.org/docs/stable/tensors.html
@@ -42,6 +46,7 @@ MATRIX.ndim
 MATRIX.shape
 
 MATRIX = torch.tensor([[7, 8, 9], [9, 10, 11]])
+MATRIX.ndim
 MATRIX.shape
 
 ## TENSOR
@@ -88,17 +93,19 @@ torch.arange(0, 10)
 
 torch.arange(start=0, end=10, step=2)
 
-# Create tensors like
+# Create tensors with same shape as some other tensor
 like_ones = torch.zeros_like(ones)
 like_ones
 like_ones.shape
 
-# https://youtu.be/Z_ikDlimN6A?t=6822
 
 # ------------------------------------------------------------------------------
-### Tensor datatypes
+## Tensor datatypes
 # ------------------------------------------------------------------------------
-# Datatypes is one of the 3 big errors you'll run into with PyTorch & deep learning
+# https://youtu.be/Z_ikDlimN6A?t=6822
+
+# Datatypes is one of the 3 big errors you'll run into with PyTorch & deep
+# learning
 # 1. Tensors not right datatype
 # 2. Tensors not right shape
 # 3. Tensors not on right device
@@ -114,6 +121,7 @@ float_32_tensor = torch.tensor(
     dtype=None,
     device=None, # "cpu", "cuda"
     requires_grad=False) # do you want gradient tracking
+float_32_tensor
 
 float_16_tensor = float_32_tensor.type(torch.float16)
 float_16_tensor
@@ -123,7 +131,7 @@ int_32_tensor
 
 # Daniel doesn't know the rules for multipling different datatypes nor do I
 # this is fine 
-float_16_tensor * int_32_tensor
+what =  int_32_tensor * float_16_tensor
 
 ## Getting info from tensors (attributes)
 
@@ -183,6 +191,7 @@ for i in range(len(tensor)):
 # 2. The resulting matrix has the shap of the outer dimensions
 # (2, 3) @ (3, 2) -> (2, 2)
 
+
 shapely = torch.matmul(torch.rand(2, 3), torch.rand(3, 2))
 shapely
 shapely.shape
@@ -211,9 +220,12 @@ torch.matmul(tensor_A.T, tensor_B)
 # ------------------------------------------------------------------------------
 
 tensor_A = torch.tensor(tensor_A, dtype=torch.float32)
+# recommended
+tensor_A = tensor_A.clone().detach()
 # or
 tensor_A = tensor_A.type(torch.float32)
 
+tensor_A
 tensor_A.max()
 tensor_A.min()
 tensor_A.mean()
@@ -236,6 +248,7 @@ torch.argmax(tensor_A)
 ## Reshaping, stacking, squeezing and unsqueezing
 # ------------------------------------------------------------------------------
 # https://youtu.be/Z_ikDlimN6A?t=10766
+
 # - Reshape - reshape an input tensor
 # - View - Return a view of an input tensor of certain shape but shares the same
 # memory of the original tensor
@@ -290,13 +303,13 @@ x_stacked
 x_stacked = torch.stack([x, x, x, rando], dim=-2)
 x_stacked
 
+# vstack hstack
+
 x_stacked = torch.hstack([x, x, x, rando])
 x_stacked
 
 x_stacked = torch.vstack([x, x, x, rando])
 x_stacked
-
-# ??? vstack hstack
 
 # Squeeze - remove the outer dimension
 
@@ -348,16 +361,20 @@ x[0, 0:2, 1]
 # ------------------------------------------------------------------------------
 # PyTorch and Numpy
 # ------------------------------------------------------------------------------
+# https://youtu.be/Z_ikDlimN6A?t=12753&si=goSDJuuLVWjmxewk
 
 ## default numpy dtype is np.float64
 ## default torch dtype is torch.float32
 ## from_numpy will take the dtype of the numpy array
+
 n = np.arange(1., 8.)
 x = torch.from_numpy(n)
 x
+
 ## changing the dtype
 x = torch.from_numpy(n).type(torch.float32)
 x
+
 # or
 n = np.arange(1., 8., dtype=np.float32)
 x = torch.from_numpy(n)
@@ -371,14 +388,14 @@ x = torch.from_numpy(n).type(torch.float32)
 n3 = x.numpy()
 n3.dtype
 
-# https://youtu.be/Z_ikDlimN6A?t=13305
 
 # ------------------------------------------------------------------------------
 # Reproducability (take out the random)
 # ------------------------------------------------------------------------------
+# https://youtu.be/Z_ikDlimN6A?t=13305
 # https://pytorch.org/docs/stable/notes/randomness.html
 
-## seed the random number generator for all device (CPU, and CUDA)
+# seed the random number generator for all device (CPU, and CUDA)
 RANDOM_SEED = 42
 
 torch.manual_seed(RANDOM_SEED)
@@ -411,11 +428,18 @@ np.random.seed(RANDOM_SEED)
 torch.cuda.is_available()
 
 ## Device agnostic code
+device
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+## macos mps
+device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+print(f"Using {device} device")
+
 torch.device(device)
 
 # count number of devices
 torch.cuda.device_count()
+torch.accelerator.device_count()
 
 # create a tensor (default on the CPU)
 # https://youtu.be/Z_ikDlimN6A?t=14773
@@ -423,6 +447,8 @@ tensor = torch.tensor([1, 2, 3], device="cpu")
 
 # move tensor to gpu (if available)
 tensor_on_gpu = tensor.to(device="cuda")
+
+tensor_on_gpu = tensor.to(device="mps")
 
 tensor_on_gpu = tensor.to(device)
 tensor_on_gpu.device
