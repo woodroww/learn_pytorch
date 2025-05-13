@@ -1,5 +1,6 @@
 # Daniel's Notebook
 # https://github.com/mrdbourke/pytorch-deep-learning/blob/main/01_pytorch_workflow.ipynb
+# 2025 https://youtu.be/LyJtbe__2i0?si=gQYJ8Ke2Z8TsY-2k&t=15990
 
 # ------------------------------------------------------------------------------
 # PyTorch Workflow
@@ -163,6 +164,7 @@ class LinearRegressionModel(nn.Module):
 
 # https://pytorch.org/tutorials/beginner/ptcheat.html
 # https://youtu.be/Z_ikDlimN6A?t=19164
+# 2025 https://youtu.be/LyJtbe__2i0?si=tMzCUzycSpIdns6E&t=19259
 
 # ------------------------------------------------------------------------------
 # Check the contents of our model
@@ -358,6 +360,7 @@ y_preds == load_preds
 # Putting it together
 # ------------------------------------------------------------------------------
 # https://youtu.be/Z_ikDlimN6A?t=27481
+# 2025 https://youtu.be/LyJtbe__2i0?si=GwnQGrRKiRVZFX6i&t=28022
 
 # make linear regression input data (features)
 # Y = a + bX

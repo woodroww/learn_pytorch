@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 # from torch import nn
 
+
 # plot_predictions(train_data=X_train, train_labels=y_train, test_data=X_test, test_labels=y_test)
 
 def plot_predictions(
@@ -36,20 +37,22 @@ def plot_predictions(
     plt.show()
 
 
-def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor):
+def plot_decision_boundary(
+        model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor):
     """
     Plots the decision boundary created by a model predicting on X.
+    Source - https://madewithml.com/courses/foundations/neural-networks
     """
     # device agnostic but here CPU works better with NumPy and Matplotlib
     model.to("cpu")
     X, y = X.to("cpu"), y.to("cpu")
 
     # Define the axis boundaries of the plot and create a meshgrid
-    x_min, x_max = X[:,0].min() - 0.1, X[:,0].max() + 0.1
-    y_min, y_max = X[:,0].min() - 0.1, X[:,0].max() + 0.1
+    x_min, x_max = X[:, 0].min() - 0.1, X[:, 0].max() + 0.1
+    y_min, y_max = X[:, 0].min() - 0.1, X[:, 0].max() + 0.1
     xx, yy = np.meshgrid(np.linspace(x_min, x_max, 101),
                          np.linspace(y_min, y_max, 101))
-    
+
     # Create X values (we're going to make predictions on these features)
     # x_in = np.c_[xx.ravel(), yy.ravel()] # stack 2D arrays together
     X_to_pred_on = torch.from_numpy(np.column_stack((xx.ravel(), yy.ravel()))).float()

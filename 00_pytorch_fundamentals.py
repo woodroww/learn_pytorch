@@ -1,25 +1,23 @@
 import torch
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 print(torch.__version__)
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f"Using {device} device")
 
-## Daniel's Notebook
+# Daniel's Notebook
 # https://github.com/mrdbourke/pytorch-deep-learning/blob/main/00_pytorch_fundamentals.ipynb
 
 # ------------------------------------------------------------------------------
-## Introduction to Tensors
+# Introduction to Tensors
 # ------------------------------------------------------------------------------
 # https://youtu.be/Z_ikDlimN6A?t=4902
 
-### Creating tensors
+# Creating tensors
 # PyTorch tensors are created using torch.Tensor()
 # https://pytorch.org/docs/stable/tensors.html
 
-## scalar
+# scalar
 scalar = torch.tensor(7)
 scalar
 
@@ -29,7 +27,7 @@ scalar.ndim
 # get python data
 scalar.item()
 
-## vector
+# vector
 vector = torch.tensor([7, 7])
 vector
 
@@ -37,7 +35,7 @@ vector.ndim
 
 vector.shape
 
-## matrix
+# matrix
 MATRIX = torch.tensor([[7, 8], [9, 10]])
 MATRIX
 
@@ -49,7 +47,7 @@ MATRIX = torch.tensor([[7, 8, 9], [9, 10, 11]])
 MATRIX.ndim
 MATRIX.shape
 
-## TENSOR
+# TENSOR
 TENSOR = torch.tensor([[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]])
 TENSOR.ndim
 TENSOR.shape
@@ -61,7 +59,7 @@ TENSOR[0][2][0]
 # scalars and vectors usually use lowercase variables
 # matricies and tensors usually use uppercase variables
 
-### Random tensors
+# Random tensors
 
 # Create a random tensor
 # https://pytorch.org/docs/stable/generated/torch.rand.html
@@ -73,10 +71,10 @@ random_tensor.shape
 
 # Create a random tensor with similar shape to an image
 # height width colors
-random_image_tensor = torch.rand(size=(224, 224, 3)) 
+random_image_tensor = torch.rand(size=(224, 224, 3))
 random_image_tensor
 
-### Zeros and ones
+# Zeros and ones
 zeros = torch.zeros(size=(3, 4))
 
 zeros * random_tensor
@@ -85,7 +83,7 @@ ones = torch.ones(size=(3, 4))
 ones
 
 
-### Creating a range of tensors and tensors-like
+# Creating a range of tensors and tensors-like
 # https://pytorch.org/docs/stable/generated/torch.arange.html
 
 # Use torch.arange()
@@ -100,9 +98,10 @@ like_ones.shape
 
 
 # ------------------------------------------------------------------------------
-## Tensor datatypes
+# Tensor datatypes
 # ------------------------------------------------------------------------------
 # https://youtu.be/Z_ikDlimN6A?t=6822
+# 2025 https://youtu.be/LyJtbe__2i0?si=khoQ4kX1-ORjfV8S&t=6986
 
 # Datatypes is one of the 3 big errors you'll run into with PyTorch & deep
 # learning
@@ -119,8 +118,8 @@ float_32_tensor
 float_32_tensor = torch.tensor(
     [3.0, 6.0, 9.0],
     dtype=None,
-    device=None, # "cpu", "cuda"
-    requires_grad=False) # do you want gradient tracking
+    device=None,  # "cpu", "cuda"
+    requires_grad=False)  # do you want gradient tracking
 float_32_tensor
 
 float_16_tensor = float_32_tensor.type(torch.float16)
@@ -130,10 +129,10 @@ int_32_tensor = torch.tensor([3, 6, 9], dtype=torch.int32)
 int_32_tensor
 
 # Daniel doesn't know the rules for multipling different datatypes nor do I
-# this is fine 
-what =  int_32_tensor * float_16_tensor
+# this is fine
+what = int_32_tensor * float_16_tensor
 
-## Getting info from tensors (attributes)
+# Getting info from tensors (attributes)
 
 some_tensor = torch.rand(3, 4)
 some_tensor
@@ -143,7 +142,7 @@ some_tensor.size()
 some_tensor.device
 
 # ------------------------------------------------------------------------------
-### Tensor operations
+# Tensor operations
 # ------------------------------------------------------------------------------
 # https://youtu.be/Z_ikDlimN6A?t=8077
 # - Addition
@@ -165,8 +164,9 @@ torch.add(tensor, 10)
 torch.sub(tensor, 10)
 
 # ------------------------------------------------------------------------------
-## Matrix multiplication (dot product)
+# Matrix multiplication (dot product)
 # ------------------------------------------------------------------------------
+# 2025 https://youtu.be/LyJtbe__2i0?si=ieBnTS0jNgtNfR-E&t=8079
 # http://www.mathsisfun.com/algebra/matrix-multiplying.html
 # http://matrixmultiplication.xyz
 
@@ -181,8 +181,8 @@ value = 0
 for i in range(len(tensor)):
     value += tensor[i] * tensor[i]
 
-## One of the most common erros in deep learning is a shape error
-### Matrix multiplication rules
+# One of the most common erros in deep learning is a shape error
+# Matrix multiplication rules
 # 1. Inner dimensions must match
 # shapes
 # (3, 2) @ (3, 2) error
@@ -216,7 +216,7 @@ torch.matmul(tensor_A, tensor_B.T)
 torch.matmul(tensor_A.T, tensor_B)
 
 # ------------------------------------------------------------------------------
-## Aggregation
+# Aggregation
 # ------------------------------------------------------------------------------
 
 tensor_A = torch.tensor(tensor_A, dtype=torch.float32)
@@ -236,7 +236,7 @@ torch.min(tensor_A)
 torch.mean(tensor_A)
 torch.sum(tensor_A)
 
-## Argmax (positional max)
+# Argmax (positional max)
 
 tensor_A.argmin()
 tensor_A.argmax()
@@ -245,7 +245,7 @@ torch.argmin(tensor_A)
 torch.argmax(tensor_A)
 
 # ------------------------------------------------------------------------------
-## Reshaping, stacking, squeezing and unsqueezing
+# Reshaping, stacking, squeezing and unsqueezing
 # ------------------------------------------------------------------------------
 # https://youtu.be/Z_ikDlimN6A?t=10766
 
@@ -283,7 +283,7 @@ x = torch.arange(1., 10.)
 z = x.view(1, 9)
 z
 
-## observe the shared memory
+# observe the shared memory
 x
 z[:, 0] = 5
 z, x
@@ -338,7 +338,7 @@ x.shape
 x_permuted = torch.permute(x, dims=(2, 0, 1))
 x_permuted.shape
 
-## notice the shared memory
+# notice the shared memory
 
 x[0, 0, 0]
 x_permuted[0, 0, 0]
@@ -361,17 +361,18 @@ x[0, 0:2, 1]
 # ------------------------------------------------------------------------------
 # PyTorch and Numpy
 # ------------------------------------------------------------------------------
+# 2025 https://youtu.be/LyJtbe__2i0?si=s0Zs4A-LumDak5SK&t=13018
 # https://youtu.be/Z_ikDlimN6A?t=12753&si=goSDJuuLVWjmxewk
 
-## default numpy dtype is np.float64
-## default torch dtype is torch.float32
-## from_numpy will take the dtype of the numpy array
+# default numpy dtype is np.float64
+# default torch dtype is torch.float32
+# from_numpy will take the dtype of the numpy array
 
 n = np.arange(1., 8.)
 x = torch.from_numpy(n)
 x
 
-## changing the dtype
+# changing the dtype
 x = torch.from_numpy(n).type(torch.float32)
 x
 
@@ -412,26 +413,26 @@ random_2 = torch.rand(3, 4)
 print(random_2)
 print(random_a == random_1)
 
-## for custom operators, you might need to set python seed as well
+# for custom operators, you might need to set python seed as well
 import random
 random.seed(RANDOM_SEED)
 
-## if you depend on NumPy, seed the global Numpy RNG
+# if you depend on NumPy, seed the global Numpy RNG
 import numpy as np
 np.random.seed(RANDOM_SEED)
 
-## Running on GPU
+# Running on GPU
 # Use Google Colab
 # Use your own GPU, read https://timdettmers.com/2020/09/07/which-gpu-for-deep-learning/
 # use cloud computing - GCP, AWS, Azure
 
 torch.cuda.is_available()
 
-## Device agnostic code
+# Device agnostic code
 device
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-## macos mps
+# macos mps
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f"Using {device} device")
 
@@ -453,12 +454,8 @@ tensor_on_gpu = tensor.to(device="mps")
 tensor_on_gpu = tensor.to(device)
 tensor_on_gpu.device
 
-## tensor must be on cpu to transform to numpy
+# tensor must be on cpu to transform to numpy
 
-## Practice exercises
+# Practice exercises
 # https://github.com/mrdbourke/pytorch-deep-learning/blob/main/extras/exercises/00_pytorch_fundamentals_exercises.ipynb
-
-
-
-
-
+# https://github.com/mrdbourke/pytorch-deep-learning/blob/main/00_pytorch_fundamentals.ipynb

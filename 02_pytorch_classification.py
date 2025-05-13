@@ -1,24 +1,34 @@
 # Classification
 # https://github.com/mrdbourke/pytorch-deep-learning/blob/main/02_pytorch_classification.ipynb
+# beginning of classification
 # https://youtu.be/Z_ikDlimN6A?t=30690
+# beginning of circles code
+# https://youtu.be/Z_ikDlimN6A?si=oai0PsMMgqZZCd4K&t=32299
+# 2025 https://youtu.be/LyJtbe__2i0?si=JF0oWfGSM-xX-g4b&t=32999
 
-from numpy.core.fromnumeric import squeeze
 import torch
 from torch import nn
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-from pathlib import Path
-import sklearn
 from sklearn.datasets import make_circles
 from sklearn.model_selection import train_test_split
-from helper_functions import plot_predictions
+from helper_functions import plot_decision_boundary
 
-MODEL_DIR = "/Users/matt/prog/torch_daniel/models"
+from sklearn.datasets import make_blobs
+
+# from numpy.core.fromnumeric import squeeze
+# import numpy as np
+# from pathlib import Path
+# import sklearn
+
+print(torch.__version__)
+device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+print(f"Using {device} device")
+
 plt.ion()
+plt.style.use("/Users/matt/.config/matplotlib/stylelib/gruvbox.mplstyle")
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-torch.device(device)
+MODEL_DIR = "/Users/matt/prog/ml/torch_daniel/models"
 
 # Architectured of a classification problem
 # https://learnpytorch.io/02_pytorch_classification/#0-architecture-of-a-classification-neural-network
@@ -38,9 +48,9 @@ circles = pd.DataFrame({"X1": X[:, 0], "X2": X[:, 1], "label": y})
 circles
 
 # https://youtu.be/Z_ikDlimN6A?t=33107
+# 2025 https://youtu.be/LyJtbe__2i0?si=BcxUBQS3FM4ZIply&t=33676
 
-X.shape
-y.shape
+X.shape, y.shape
 
 X = torch.from_numpy(X).type(torch.float32)
 y = torch.from_numpy(y).type(torch.float32)
@@ -54,9 +64,9 @@ X_train.shape, X_test.shape, y_train.shape, y_test.shape
 
 torch.manual_seed(42)
 
+
 # So we want to classify the blue dots as blue and the red dots as red
-
-
+# 2025 https://youtu.be/LyJtbe__2i0?si=G4Tk1F07NHs1CDwG&t=34777
 class CircleModelV0(nn.Module):
     def __init__(self):
         super().__init__()
@@ -73,33 +83,28 @@ model_0.state_dict()
 
 model_0.eval()
 with torch.inference_mode():
-    y_preds = model_0(X_test)
-torch.round(y_preds)
+    untrained_logits = model_0(X_test.to(device))
 
-## yikes
+untrained_logits.shape
+untrained_logits[:5]
 
-# loss_fn = nn.L1Loss() # MAE mean avg error
+# https://medium.com/data-science/understanding-binary-cross-entropy-log-loss-a-visual-explanation-a3ac6025181a
 loss_fn = nn.BCEWithLogitsLoss()
 opt = torch.optim.SGD(model_0.parameters(), lr=0.01)
 
-with torch.inference_mode():
-    y_logits = model_0(X_test.to(device))[:5]
-y_logits
+# convert the output of the model (the logits) into prediction probabilities
+# by passing them to some kind of activation function
+# sigmoid for binary classification
+# softmax for multiclass classification
+y_pred_probs = torch.sigmoid(untrained_logits)
+y_pred_probs[:5]
 
-# so I thought he said something about the sigmoid being included but I guess not
-y_pred_probs = torch.sigmoid(y_logits)
-
+# y_pred_probs >= 0.5, y=1 (class 1)
+# y_pred_probs < 0.5, y=0 (class 0)
 y_preds = torch.round(y_pred_probs)
 
-# https://youtu.be/Z_ikDlimN6A?t=37338
+y_preds[:5], y_test[:5]
 
-y_preds[:5]
-
-torch.manual_seed(42)
-torch.cuda.manual_seed(42)
-
-X_train, y_train = X_train.to(device), y_train.to(device)
-X_test, y_test = X_test.to(device), y_test.to(device)
 
 # argument order based off how sci kit does it
 # pytorch is reversed
@@ -119,7 +124,8 @@ def train_model(model, epochs, X_train, y_train, loss_fn, opt):
         y_logits = model(X_train).squeeze()
         y_preds = torch.round(torch.sigmoid(y_logits))
         # 2. Loss
-        # from docs BCEWithLogitsLoss combines a sigmoid layer and BCELoss in a single class
+        # from docs BCEWithLogitsLoss combines a sigmoid layer and BCELoss in a
+        # single class
         # expects raw logits
         loss = loss_fn(y_logits, y_train)
         # BCELoss would be
@@ -154,10 +160,10 @@ def train_model(model, epochs, X_train, y_train, loss_fn, opt):
     model_0, 100, X_train, y_train, loss_fn, opt
 )
 
-# So not really good
 
-from helper_functions import plot_decision_boundary
-
+# From the metrics it looks like our model isn't learning anything
+# So let's visualize
+# https://madewithml.com/courses/foundations/neural-networks
 
 def decision_plots(model, X_train, y_train, X_test, y_test):
     plt.figure(figsize=(12, 6))
@@ -170,21 +176,21 @@ def decision_plots(model, X_train, y_train, X_test, y_test):
 
 
 decision_plots(model_0, X_train, y_train, X_test, y_test)
+# so we can see that the circular data can't be seperated by a straight line
 
-# https://youtu.be/Z_ikDlimN6A?t=40301
 
-# Here we shall change one variable here to improve our model
-# Why Daniel talk about this then he changes two things
-# I think I only increase the features here
+# so we try the same thing with one more layer, idk its Daniel
 class CircleModelV1(nn.Module):
     def __init__(self):
         super().__init__()
-        self.layer_1 = nn.Linear(in_features=2, out_features=20)
-        self.layer_2 = nn.Linear(in_features=20, out_features=1)
+        self.layer_1 = nn.Linear(in_features=2, out_features=10)
+        self.layer_2 = nn.Linear(in_features=10, out_features=10)
+        self.layer_3 = nn.Linear(in_features=10, out_features=1)
 
     def forward(self, x):
         z = self.layer_1(x)
         z = self.layer_2(z)
+        z = self.layer_3(z)
         return z
 
 
@@ -196,117 +202,14 @@ opt = torch.optim.SGD(model_1.parameters(), lr=0.01)
 )
 decision_plots(model_1, X_train, y_train, X_test, y_test)
 
-# https://youtu.be/Z_ikDlimN6A?t=40979
-# Begin a diversion back into regression
-# ------------------------------------------------------------------------------
-# So we know the problem is we don't have any non-linearity
-# Daniel wants to trouble shoot this problem step by step
-# One way to troubleshoot a larger problem is to test out a smaller problem
-# Can this model fit a linear regression? Let's find out.
-
-weight = 0.7
-bias = 0.3
-start = 0
-end = 1
-step = 0.01
-X_regression = torch.arange(start, end, step).unsqueeze(dim=1)
-y_regression = bias + weight * X_regression
-
-(
-    X_regression_train,
-    X_regression_test,
-    y_regression_train,
-    y_regression_test,
-) = train_test_split(
-    X_regression, y_regression, test_size=0.20, shuffle=False, random_state=42
-)
-
-X_regression_train = X_regression_train.to(device)
-y_regression_train = y_regression_train.to(device)
-X_regression_test = X_regression_test.to(device)
-y_regression_test = y_regression_test.to(device)
-len(X_regression_train)
-len(y_regression_train)
-len(X_regression_test)
-len( y_regression_test)
-
-plot_predictions(
-    train_data=X_regression_train,
-    train_labels=y_regression_train,
-    test_data=X_regression_test,
-    test_labels=y_regression_test,
-)
-
-class RegressionModel(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.layer_1 = nn.Linear(in_features=1, out_features=20)
-        self.layer_2 = nn.Linear(in_features=20, out_features=1)
-    def forward(self, x):
-        z = self.layer_1(x)
-        z = self.layer_2(z)
-        return z
-
-# train model
-regression_model = RegressionModel().to(device)
-loss_fn = nn.L1Loss()
-opt = torch.optim.SGD(regression_model.parameters(), lr=0.01)
-for epoch in range(1000):
-    y_pred = regression_model(X_regression_train)
-    loss = loss_fn(y_pred, y_regression_train)
-    opt.zero_grad()
-    loss.backward()
-    opt.step()
-    regression_model.eval()
-    with torch.inference_mode():
-        test_pred = regression_model(X_regression_test)
-        test_loss = loss_fn(test_pred, y_regression_test)
-    if epoch % 100 == 0:
-        print(f"Epoch: {epoch} | Loss: {loss:.5f} | Test loss: {test_loss}")
-
-regression_model.eval()
-with torch.inference_mode():
-    y_preds = regression_model(X_regression_test)
-
-plot_predictions(
-    train_data=X_regression_train,
-    train_labels=y_regression_train,
-    test_data=X_regression_test,
-    test_labels=y_regression_test,
-    predictions=y_preds
-)
-
-# https://youtu.be/Z_ikDlimN6A?t=42096
-# end diversion
-# ------------------------------------------------------------------------------
-
 
 # ------------------------------------------------------------------------------
 # Non-linear activations
 # ------------------------------------------------------------------------------
 # So we know the problem is we don't have any non-linearity
-## add a relu layer
-
-# try to resart everything here for ease of use
-
-import torch
-from torch import nn
-from sklearn.datasets import make_circles
-from sklearn.model_selection import train_test_split
-from helper_functions import plot_decision_boundary
-import matplotlib.pyplot as plt
-
-plt.ion()
-device = "cuda" if torch.cuda.is_available() else "cpu"
-torch.device(device)
-
-n_samples = 1000
-X, y = make_circles(n_samples, noise=0.03, random_state=42)
-X = torch.from_numpy(X).type(torch.float32)
-y = torch.from_numpy(y).type(torch.float32)
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.20, shuffle=False, random_state=42
-)
+# 2025 https://youtu.be/LyJtbe__2i0?si=-W201m_rGoEANehv&t=44011
+# https://docs.pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
+# add a relu layer
 
 class CircleModelV2(nn.Module):
     def __init__(self):
@@ -317,6 +220,7 @@ class CircleModelV2(nn.Module):
         self.relu = nn.ReLU()
         # could do this here and remove it from the train_model function
         # self.sig = nn.Sigmoid()
+
     def forward(self, x):
         z = self.layer_1(x)
         z = self.relu(z)
@@ -325,22 +229,26 @@ class CircleModelV2(nn.Module):
         z = self.layer_3(z)
         return z
 
+
 model_3 = CircleModelV2().to(device)
 loss_fn = nn.BCEWithLogitsLoss()
 optimizer = torch.optim.SGD(model_3.parameters(), lr=0.01)
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 
+model_3.to(device)
 for epoch in range(1000):
+    model_3.train()
     # 1. Forward pass
     y_logits = model_3(X_train).squeeze()
-    y_pred = torch.round(torch.sigmoid(y_logits)) # logits -> prediction probabilities -> prediction labels
-    
+    # logits -> prediction probabilities -> prediction labels
+    y_pred = torch.round(torch.sigmoid(y_logits))
+
     # 2. Calculate loss and accuracy
-    loss = loss_fn(y_logits, y_train) # BCEWithLogitsLoss calculates loss using logits
-    acc = accuracy_fn(y_true=y_train, 
-                      y_pred=y_pred)
-    
+    # BCEWithLogitsLoss calculates loss using logits
+    loss = loss_fn(y_logits, y_train)
+    acc = accuracy_fn(y_true=y_train, y_pred=y_pred)
+
     # 3. Optimizer zero grad
     optimizer.zero_grad()
 
@@ -350,16 +258,16 @@ for epoch in range(1000):
     # 5. Optimizer step
     optimizer.step()
 
-    ### Testing
+    # Testing
     model_3.eval()
     with torch.inference_mode():
-      # 1. Forward pass
-      test_logits = model_3(X_test).squeeze()
-      test_pred = torch.round(torch.sigmoid(test_logits)) # logits -> prediction probabilities -> prediction labels
-      # 2. Calcuate loss and accuracy
-      test_loss = loss_fn(test_logits, y_test)
-      test_acc = accuracy_fn(y_true=y_test,
-                             y_pred=test_pred)
+        # 1. Forward pass
+        test_logits = model_3(X_test).squeeze()
+        # logits -> prediction probabilities -> prediction labels
+        test_pred = torch.round(torch.sigmoid(test_logits))
+        # 2. Calcuate loss and accuracy
+        test_loss = loss_fn(test_logits, y_test)
+        test_acc = accuracy_fn(y_true=y_test, y_pred=test_pred)
 
     # Print out what's happening
     if epoch % 100 == 0:
@@ -368,10 +276,57 @@ for epoch in range(1000):
 decision_plots(model_3, X_train, y_train, X_test, y_test)
 plt.show()
 
-# https://youtu.be/Z_ikDlimN6A?t=44806
-
 
 # TODO:
 # create a class to hold the results from train model like tensorflow history
-# create a function for the above where we create the loss fn and the optimizer
 
+# Activation plots
+
+A = torch.arange(-10, 10, 1, dtype=torch.float32)
+plt.plot(A)
+plt.plot(torch.relu(A))
+
+
+def relu(x):
+    return torch.maximum(torch.tensor(0), x)
+
+
+plt.plot(relu(A))
+
+plt.plot(torch.sigmoid(A))
+
+
+def sigmoid(x):
+    return 1 / (1 + torch.exp(-x))
+
+
+plt.plot(sigmoid(A))
+
+# putting it all together
+# multi-class classification
+
+# create multi-class dataset
+NUM_CLASSES = 4
+NUM_FEATURES = 2
+RANDOM_SEED = 42
+
+X_blob, y_blob = make_blobs(n_samples=1000,
+                            n_features=NUM_FEATURES,
+                            centers=NUM_CLASSES,
+                            cluster_std=1.5,
+                            random_state=RANDOM_SEED)
+
+X_blob = torch.from_numpy(X_blob).type(torch.float)
+y_blob = torch.from_numpy(y_blob).type(torch.float)
+
+X_blob_train, X_blob_test, y_blob_train, y_blob_test = train_test_split(
+        X_blob,
+        y_blob,
+        test_size=0.2,
+        random_state=RANDOM_SEED)
+
+
+plt.figure(figsize=(10, 7))
+plt.scatter(X_blob[:, 0], X_blob[:, 1], c=y_blob, cmap=plt.cm.RdYlBu)
+
+# 2025 https://youtu.be/LyJtbe__2i0?si=_lMHY-hwTEDpHubY&t=47163
