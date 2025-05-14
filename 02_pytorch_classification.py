@@ -1,5 +1,6 @@
 # Classification
 # https://github.com/mrdbourke/pytorch-deep-learning/blob/main/02_pytorch_classification.ipynb
+
 # beginning of classification
 # https://youtu.be/Z_ikDlimN6A?t=30690
 # beginning of circles code
@@ -13,8 +14,8 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import make_circles
 from sklearn.model_selection import train_test_split
 from helper_functions import plot_decision_boundary
-
 from sklearn.datasets import make_blobs
+from torchmetrics import Accuracy
 
 # from numpy.core.fromnumeric import squeeze
 # import numpy as np
@@ -302,10 +303,13 @@ def sigmoid(x):
 
 plt.plot(sigmoid(A))
 
+# ------------------------------------------------------------------------------
 # putting it all together
+# ------------------------------------------------------------------------------
 # multi-class classification
 
 # create multi-class dataset
+
 NUM_CLASSES = 4
 NUM_FEATURES = 2
 RANDOM_SEED = 42
@@ -319,6 +323,12 @@ X_blob, y_blob = make_blobs(n_samples=1000,
 X_blob = torch.from_numpy(X_blob).type(torch.float)
 y_blob = torch.from_numpy(y_blob).type(torch.float)
 
+plt.figure(figsize=(10, 7))
+plt.scatter(X_blob[:, 0], X_blob[:, 1], c=y_blob, cmap=plt.cm.RdYlBu)
+
+X_blob = X_blob.to(device)
+y_blob = y_blob.to(device)
+
 X_blob_train, X_blob_test, y_blob_train, y_blob_test = train_test_split(
         X_blob,
         y_blob,
@@ -326,7 +336,107 @@ X_blob_train, X_blob_test, y_blob_train, y_blob_test = train_test_split(
         random_state=RANDOM_SEED)
 
 
-plt.figure(figsize=(10, 7))
-plt.scatter(X_blob[:, 0], X_blob[:, 1], c=y_blob, cmap=plt.cm.RdYlBu)
-
 # 2025 https://youtu.be/LyJtbe__2i0?si=_lMHY-hwTEDpHubY&t=47163
+
+
+# model
+class BlobModel1(nn.Module):
+    def __init__(self, input_features, ouput_features, hidden_units=8):
+        super().__init__()
+        self.linear_layer_stack = nn.Sequential(
+            nn.Linear(in_features=input_features, out_features=hidden_units),
+            nn.Linear(in_features=hidden_units, out_features=hidden_units),
+            nn.Linear(in_features=hidden_units, out_features=ouput_features),
+        )
+
+    def forward(self, x):
+        return self.linear_layer_stack(x)
+
+
+model_4 = BlobModel1(input_features=2,
+                     ouput_features=NUM_CLASSES).to(device)
+
+loss_fn = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(model_4.parameters(), lr=0.01)
+
+
+model_4.eval()
+with torch.inference_mode():
+    test_logits = model_4(X_blob_test)
+y_pred_probs = torch.softmax(test_logits, dim=1)
+
+test_logits[:5]
+y_pred_probs[:5]
+
+# softmax sum results 1 for each sample
+torch.sum(y_pred_probs[0])
+# each value in the sample is a percentage of how likely that class is the answer
+y_pred_probs[0]
+y_class = 0
+y_pred_probs[0, y_class]
+
+most_likely_class = torch.argmax(y_pred_probs[0])
+most_likely_class
+
+# convert prediction probabilities to prediction labels
+y_preds = torch.argmax(y_pred_probs, dim=1)
+
+
+model_4.to(device)
+for epoch in range(100):
+    model_4.train()
+    # 1. Forward pass
+    y_logits = model_4(X_blob_train)
+    # logits -> prediction probabilities -> prediction labels
+    y_pred_probs = torch.softmax(y_logits, dim=1)
+    # 2. Calculate loss and accuracy
+    # BCEWithLogitsLoss calculates loss using logits
+    loss = loss_fn(y_logits, y_blob_train)
+    train_pred = torch.argmax(y_pred_probs, dim=1)
+    acc = accuracy_fn(y_true=y_blob_train, y_pred=train_pred)
+    # 3. Optimizer zero grad
+    optimizer.zero_grad()
+    # 4. Loss backward
+    loss.backward()
+    # 5. Optimizer step
+    optimizer.step()
+    # Testing
+    model_4.eval()
+    with torch.inference_mode():
+        test_logits = model_4(X_blob_test)
+        test_pred_prob = torch.softmax(test_logits, dim=1)
+        test_pred = torch.argmax(test_pred_prob, dim=1)
+        test_loss = loss_fn(test_logits, y_blob_test)
+        test_acc = accuracy_fn(y_true=y_blob_test, y_pred=test_pred)
+
+    # Print out what's happening
+    if epoch % 10 == 0:
+        print(f"Epoch: {epoch} | Loss: {loss:.5f} | Acc: {acc:.5f} |", end="")
+        print(f" Test loss: {test_loss:.5f} | Test acc: {test_acc:.5f}")
+
+
+model_4.eval()
+with torch.inference_mode():
+    test_logits = model_4(X_blob_test)
+    test_pred_prob = torch.softmax(test_logits, dim=1)
+    test_pred = torch.argmax(test_pred_prob, dim=1)
+
+y_blob_test.shape
+y_blob_test[:5]
+test_pred[:5]
+
+decision_plots(model_4, X_blob_train, y_blob_train, X_blob_test, test_pred)
+
+# classification metrics
+# * accuracy
+# * precision
+# * recall
+# * F1 score
+# https://lightning.ai/docs/torchmetrics/stable/
+# /Users/matt/obsidian/ML/Evaluating\ a\ Classifier.md
+# pip install torchmetrics
+
+tm_accuracy = Accuracy(task='multiclass', num_classes=NUM_CLASSES).to(device)
+tm_accuracy(test_pred, y_blob_test)
+
+
