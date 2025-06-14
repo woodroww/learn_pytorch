@@ -21,15 +21,19 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 # pip install scikit-learn
 from sklearn.model_selection import train_test_split
+import os
 
 print(torch.__version__)
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f"Using {device} device")
 
 plt.ion()
-plt.style.use("/Users/matt/.config/matplotlib/stylelib/gruvbox.mplstyle")
 
-MODEL_DIR = "/Users/matt/prog/ml/torch_daniel/models"
+home_dir = os.path.expanduser('~')
+style_path = os.path.join(home_dir, ".config/matplotlib/stylelib/gruvbox.mplstyle")
+plt.style.use(style_path)
+
+MODEL_DIR = os.path.join(home_dir, "prog/ml/daniel/models")
 
 # ------------------------------------------------------------------------------
 # 1. Get data ready (data cleaning and transformation, turn into tensors)
